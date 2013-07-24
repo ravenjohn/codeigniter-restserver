@@ -2,8 +2,8 @@
 
 class User extends REST_Controller
 {
-	protected $methods = array(
-		'index_get'		=> array('level' => NOOB_LEVEL, 'key' => FALSE),
+	public $methods = array(
+		'index_get'		=> array('key' => FALSE),
 		'index_post'	=> array('level' => ADMIN_LEVEL),
 		'index_put'		=> array('level' => ADMIN_LEVEL),
 		'index_delete'	=> array('level' => ADMIN_LEVEL)

@@ -11,6 +11,7 @@
 */
 define('DEFAULT_QUERY_LIMIT', 10);
 
+define('SUSPENDED_LEVEL', 0);
 define('NOOB_LEVEL', 1);
 define('USER_LEVEL', 33);
 define('ADMIN_LEVEL', 66);

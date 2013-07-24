@@ -2,7 +2,7 @@
 
 class Key extends REST_Controller
 {
-	protected $methods = array(
+	public $methods = array(
 		'index_post'		=> array('level' => ADMIN_LEVEL),
 		'index_put'			=> array('level' => ADMIN_LEVEL),
 		'index_delete'		=> array('level' => ADMIN_LEVEL),
