@@ -13,7 +13,7 @@
  * @link			Note yet uploaded
  * @version 		1.0
  */
-class MY_Model extends CI_Model 
+class REST_Model extends CI_Model 
 {
 
 	protected $_time				= NULL;
