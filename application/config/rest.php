@@ -22,7 +22,7 @@ $config['force_https'] = FALSE;
 |	Default: xml
 |
 */
-$config['rest_default_format'] = 'xml';
+$config['rest_default_format'] = 'json';
 
 /*
 |--------------------------------------------------------------------------
@@ -123,7 +123,7 @@ $config['rest_valid_logins'] = array('admin' => '1234');
 |	 restrict certain methods to IPs in your whitelist
 |
 */
-$config['rest_ip_whitelist_enabled'] = false;
+$config['rest_ip_whitelist_enabled'] = true;
 
 /*
 |--------------------------------------------------------------------------
@@ -187,7 +187,7 @@ $config['rest_keys_table'] = 'keys';
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 |
 */
-$config['rest_enable_keys'] = FALSE;
+$config['rest_enable_keys'] = TRUE;
 
 /*
 |--------------------------------------------------------------------------
@@ -211,7 +211,7 @@ $config['rest_key_column'] = 'key';
 |	Max: 40
 |
 */
-$config['rest_key_length'] = 40;
+$config['rest_key_length'] = 32;
 
 /*
 |--------------------------------------------------------------------------
@@ -223,7 +223,7 @@ $config['rest_key_length'] = 40;
 | Default: X-API-KEY
 |
 */
-$config['rest_key_name'] = 'X-API-KEY';
+$config['rest_key_name'] = 'X-TMPL-API-KEY';
 
 /*
 |--------------------------------------------------------------------------
@@ -320,7 +320,7 @@ $config['rest_enable_limits'] = FALSE;
 |	FALSE
 |
 */
-$config['rest_ignore_http_accept'] = FALSE;
+$config['rest_ignore_http_accept'] = TRUE;
 
 /*
 |--------------------------------------------------------------------------

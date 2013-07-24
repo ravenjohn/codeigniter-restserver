@@ -1,5 +1,32 @@
 <?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
+
+/*
+|--------------------------------------------------------------------------
+| Template Constants
+|--------------------------------------------------------------------------
+|
+| To ease table renaming
+|
+*/
+define('DEFAULT_QUERY_LIMIT', 10);
+
+define('NOOB_LEVEL', 1);
+define('USER_LEVEL', 33);
+define('ADMIN_LEVEL', 66);
+define('ROOT_LEVEL', 100);
+
+/*
+|--------------------------------------------------------------------------
+| Database Tables
+|--------------------------------------------------------------------------
+|
+| To ease table renaming
+|
+*/
+
+define('TABLE_USERS', 'user');
+
 /*
 |--------------------------------------------------------------------------
 | File and Directory Modes

@@ -1,19 +1,19 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * CodeIgniter Rest Controller
+ * Modified CodeIgniter Rest Controller
  *
  * A fully RESTful server implementation for CodeIgniter using one library, one config file and one controller.
  *
  * @package        	CodeIgniter
  * @subpackage    	Libraries
  * @category    	Libraries
- * @author        	Phil Sturgeon
+ * @authors        	Phil Sturgeon | Raven Lagrimas
  * @license         http://philsturgeon.co.uk/code/dbad-license
  * @link			https://github.com/philsturgeon/codeigniter-restserver
  * @version 		2.6.2
  */
-abstract class REST_Controller extends CI_Controller
+class REST_Controller extends CI_Controller
 {
 	/**
 	 * This defines the rest format.
@@ -130,7 +130,7 @@ abstract class REST_Controller extends CI_Controller
 		'html' => 'text/html',
 		'csv' => 'application/csv'
 	);
-
+	
 	/**
 	 * Developers can extend this class and add a check in here.
 	 */
@@ -262,6 +262,18 @@ abstract class REST_Controller extends CI_Controller
 	 */
 	public function _remap($object_called, $arguments)
 	{
+		
+		if (is_numeric($object_called))
+		{
+			$arguments[] = $object_called;
+			$object_called = 'index';
+		}
+	
+		if(($this->request->method === 'put' || $this->request->method === 'delete') && empty($arguments))
+		{
+			$this->response(array('status' => false, 'error' => 'Unkown method.'), 400);
+		}
+		
 		// Should we answer if not over SSL?
 		if (config_item('force_https') AND !$this->_detect_ssl())
 		{
@@ -275,6 +287,7 @@ abstract class REST_Controller extends CI_Controller
 		}
 
 		$controller_method = $object_called.'_'.$this->request->method;
+		
 
 		// Do we want to log this method (if allowed by config)?
 		$log_method = !(isset($this->methods[$controller_method]['log']) AND $this->methods[$controller_method]['log'] == FALSE);
@@ -344,7 +357,14 @@ abstract class REST_Controller extends CI_Controller
 	 */
 	protected function _fire_method($method, $args)
 	{
-		call_user_func_array($method, $args);
+		try
+		{
+			call_user_func_array($method, $args);
+		}
+		catch(Exception $e)
+		{
+			$this->response(array('error' => $e->getMessage()), 400);
+		}
 	}
 
 	/**
@@ -355,10 +375,17 @@ abstract class REST_Controller extends CI_Controller
 	 * @param array $data
 	 * @param null|int $http_code
 	 */
-	public function response($data = array(), $http_code = null)
+	public function response($data = array(), $http_code = 200)
 	{
 		global $CFG;
 
+		if(ENVIRONMENT === 'development')
+		{
+			$data['response_time'] = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']; 
+			$data['memory_usage'] = ( ! function_exists('memory_get_usage')) ? '0' : round(memory_get_usage()/1024/1024, 2).'MB';
+		}
+		
+		/* 
 		// If data is empty and not code provide, error and bail
 		if (empty($data) && $http_code === null)
 		{
@@ -367,9 +394,15 @@ abstract class REST_Controller extends CI_Controller
 			// create the output variable here in the case of $this->response(array());
 			$output = NULL;
 		}
+		*/
+		
+		if(!isset($data['status'])){
+			$data['status'] = ($http_code === 200);
+		}
 
 		// If data is empty but http code provided, keep the output empty
-		else if (empty($data) && is_numeric($http_code))
+		//else
+		if (empty($data) && is_numeric($http_code))
 		{
 			$output = NULL;
 		}
