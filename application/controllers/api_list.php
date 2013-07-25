@@ -3,7 +3,7 @@
 class Api_List extends REST_Controller
 {
 	protected $methods = array(
-		'index_get'		=> array('level' => NOOB_LEVEL, 'key' => FALSE)
+		'index_get'		=> array('key' => FALSE)
 	);
 	
 	

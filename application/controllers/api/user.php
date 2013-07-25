@@ -21,13 +21,20 @@ class User extends REST_Controller
 	
 		if (is_numeric($id))
 		{
-			$this->response($this->user_model->get_by_id($id));
+			$this->response(
+				$this->user_model->get_by_id(
+					$id,
+					$this->get('fields')
+				)
+			);
 		}
 		
 		else
 		{
 			$this->response(
 				$this->user_model->get_all(
+					FALSE,
+					FALSE,
 					$this->get('fields'),
 					$this->get('page'),
 					$this->get('limit'),
@@ -40,7 +47,12 @@ class User extends REST_Controller
 	
 	public function index_post()
 	{
-		$this->response( $this->user_model->create( $this->post() ) );
+		$this->response(
+			$this->user_model->create(
+				$this->post(),
+				$_GET['fields']
+			)
+		);
 	}
 	
 	public function index_put($id)
@@ -48,7 +60,8 @@ class User extends REST_Controller
 		$this->response(
 			$this->user_model->update(
 				$id,
-				$this->put()
+				$this->put(),
+				$_GET['fields']
 			)
 		);
 	}
