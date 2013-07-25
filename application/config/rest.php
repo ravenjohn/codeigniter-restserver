@@ -123,7 +123,7 @@ $config['rest_valid_logins'] = array('admin' => '1234');
 |	 restrict certain methods to IPs in your whitelist
 |
 */
-$config['rest_ip_whitelist_enabled'] = true;
+$config['rest_ip_whitelist_enabled'] = false;
 
 /*
 |--------------------------------------------------------------------------

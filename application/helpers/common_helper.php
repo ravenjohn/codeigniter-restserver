@@ -1,5 +1,7 @@
 <?php
-
+/*
+ * Common Functions
+*/
 function getServerURL()
 {
 	$pageURL = 'http';
@@ -20,10 +22,12 @@ function getServerURL()
 		$pageURL .= $_SERVER["SERVER_NAME"];
 	}
 	
-	return $pageURL.'/';
+	return $pageURL;
 }
 
 function getApiURL()
 {
-	return getServerURL() . 'api/';
+	$url = getServerURL() . $_SERVER['REQUEST_URI'];
+	
+	return substr($url, 0, strrpos($url, '_') - 3) . 'api/';
 }

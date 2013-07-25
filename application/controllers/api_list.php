@@ -21,11 +21,11 @@ class Api_List extends REST_Controller
 	
 		$data	= array();
 		
-		$data['levels'][SUSPENDED_LEVEL] = 'SUSPENDED_LEVEL';
-		$data['levels'][NOOB_LEVEL] = 'NOOB_LEVEL';
-		$data['levels'][USER_LEVEL] = 'USER_LEVEL';
-		$data['levels'][ADMIN_LEVEL] = 'ADMIN_LEVEL';
-		$data['levels'][ROOT_LEVEL] = 'ROOT_LEVEL';
+		$data['levels'][SUSPENDED_LEVEL] = 'Suspended';
+		$data['levels'][NOOB_LEVEL] = 'Noob';
+		$data['levels'][USER_LEVEL] = 'User';
+		$data['levels'][ADMIN_LEVEL] = 'Admin';
+		$data['levels'][ROOT_LEVEL] = 'Root';
 		
 		
 		$dir	= APPPATH.'/controllers/api/';
@@ -48,6 +48,10 @@ class Api_List extends REST_Controller
 			{
 			
 				$method = $value;
+				if(isset($method['level']))
+				{
+					$method['level'] = $data['levels'][$method['level']];
+				}
 				$method['method_name'] = substr($key, 0, strrpos($key, '_'));
 				$method['HTTP_VERB'] = strtoupper(substr($key, strrpos($key, '_') + 1));
 
