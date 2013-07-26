@@ -21,24 +21,21 @@ class REST_Model extends CI_Model
 	 *
 	 * @var unixtimestamp
 	 */
-	protected $_time				= NULL;
-	
+	protected $_time = NULL;
 	
 	/**
 	 * Model's table name in the database
 	 *
 	 * @var string
 	 */
-    protected $table_name			= NULL;	
-	
+    protected $table_name = NULL;	
 	
 	/**
 	 * List of columns of the table in the database
 	 *
 	 * @var array
 	 */
-	protected $columns				= array();
-	
+	protected $columns = array();
 	
 	/**
 	 * List of sortable columns of the table
@@ -46,8 +43,7 @@ class REST_Model extends CI_Model
 	 *
 	 * @var array
 	 */
-	protected $sortable_columns		= array();
-	
+	protected $sortable_columns = array();
 	
 	/**
 	 * Get selectable columns of the table, passwords shouldn't be here, 
@@ -55,8 +51,15 @@ class REST_Model extends CI_Model
 	 *
 	 * @var array
 	 */
-	protected $selectable_columns	= array();
-
+	protected $selectable_columns = array();
+	
+	/**
+	 * Get searchable columns of the table
+	 * subset of $columns
+	 *
+	 * @var array
+	 */
+	protected $searchable_columns = array();
 	
 	/*
 	 * Constructor function
@@ -282,14 +285,14 @@ class REST_Model extends CI_Model
 	 *
 	 * Gets all data based on the query
 	 *
-	 * @param	array	$where			if you want to filter using where
-	 * @param	array	$like			if you want to filter using like
-	 * @param	array	$fields			the fields to be selected
-	 * @param	array	$page			the page
-	 * @param	array	$limit			number of data per page
-	 * @param	array	$sort_field		if you want to sort
-	 * @param	array	$sort_orer		order of sorting
-	 * @param	string	$table			In case, you don't want to use the model's default table
+	 * @param	array			$where			if you want to filter using where
+	 * @param	string/array	$like			if you want to filter using like
+	 * @param	array			$fields			the fields to be selected
+	 * @param	array			$page			the page
+	 * @param	array			$limit			number of data per page
+	 * @param	array			$sort_field		if you want to sort
+	 * @param	array			$sort_orer		order of sorting
+	 * @param	string			$table			In case, you don't want to use the model's default table
 	 */
 	public function get_all($where = FALSE,$like = FALSE,$fields = FALSE,$page = 1,$limit = DEFAULT_QUERY_LIMIT,$sort_field = FALSE,$sort_order = 'asc',$table = FALSE)
 	{
@@ -300,6 +303,7 @@ class REST_Model extends CI_Model
 		$limit			= self::_limit($limit);
 		$offset			= self::_offset($limit, $page);
 		$sort_order		= self::_sort_order($sort_order);
+		$like			= $this->_validate_like($like);
 		$fields			= $this->_select_fields($fields);
 		$sort_field		= $this->_sort_field($sort_field);
 		
@@ -315,7 +319,7 @@ class REST_Model extends CI_Model
 		// if like is supplied
 		if($like)
 		{
-			$this->db->like($like);
+			$this->db->or_like($like);
 		}
 		
 		// if sort_field is supplied
@@ -337,10 +341,17 @@ class REST_Model extends CI_Model
 		// build data
 		$return						 = array();
     	$return['data']				 = $query->result_array();
+		
+		if(ENVIRONMENT === 'development')
+		{
+			$return['query'] = $this->db->last_query();
+		}
+		
 		$return['page']				 = $page;
 		$return['items_count']		 = $query->num_rows();
 		$return['items_per_page']	 = $limit;
 		$return['items_total_count'] = $this->get_total_count($where, $like);
+		
 		
 		// free result
 		$query->free_result();
@@ -374,7 +385,7 @@ class REST_Model extends CI_Model
 		// if like is supplied
 		if($like)
 		{
-			$this->db->like($like);
+			$this->db->or_like($like);
 		}
 		
 		return $this->db->count_all_results();
@@ -462,6 +473,34 @@ class REST_Model extends CI_Model
 		}
 
 		return $sort_order ? $sort_order : 'asc';
+	}
+	
+	/**
+	 * Check if the like parameter is valid
+	 *
+	 * @param	string/array	$like	the paramater
+	 */
+	private function _validate_like($like)
+	{
+	
+		if (is_array($like))
+		{
+			return $like;
+		}
+		
+		else if (is_string($like))
+		{
+			$return = array();
+		
+			foreach($this->searchable_columns as $column)
+			{
+				$return[$column] = $like;
+			}
+			
+			return $return;
+		}
+		
+		return FALSE;
 	}
 	
 	/**

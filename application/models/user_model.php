@@ -29,6 +29,12 @@ class User_model extends REST_Model
 			'date_created',
 			'date_updated'
 		);
+		
+		$this->searchable_columns = array(
+			'name',
+			'date_created',
+			'date_updated'
+		);
 	}
 	
 	//model specific methods...

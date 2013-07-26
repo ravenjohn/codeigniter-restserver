@@ -34,7 +34,7 @@ class User extends REST_Controller
 			$this->response(
 				$this->user_model->get_all(
 					FALSE,
-					FALSE,
+					$this->get('key'),
 					$this->get('fields'),
 					$this->get('page'),
 					$this->get('limit'),
