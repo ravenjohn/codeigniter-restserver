@@ -1,6 +1,6 @@
 <?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
-class User_model extends REST_Model
+class Users_model extends REST_Model
 {
 
 	function __construct()
@@ -31,9 +31,7 @@ class User_model extends REST_Model
 		);
 		
 		$this->searchable_columns = array(
-			'name',
-			'date_created',
-			'date_updated'
+			'name'
 		);
 	}
 	

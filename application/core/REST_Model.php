@@ -35,7 +35,7 @@ class REST_Model extends CI_Model
 	 *
 	 * @var array
 	 */
-	protected $columns = array();
+	public $columns = array();
 	
 	/**
 	 * List of sortable columns of the table
@@ -43,7 +43,7 @@ class REST_Model extends CI_Model
 	 *
 	 * @var array
 	 */
-	protected $sortable_columns = array();
+	public $sortable_columns = array();
 	
 	/**
 	 * Get selectable columns of the table, passwords shouldn't be here, 
@@ -51,7 +51,7 @@ class REST_Model extends CI_Model
 	 *
 	 * @var array
 	 */
-	protected $selectable_columns = array();
+	public $selectable_columns = array();
 	
 	/**
 	 * Get searchable columns of the table
@@ -59,7 +59,7 @@ class REST_Model extends CI_Model
 	 *
 	 * @var array
 	 */
-	protected $searchable_columns = array();
+	public $searchable_columns = array();
 	
 	/*
 	 * Constructor function
@@ -124,11 +124,16 @@ class REST_Model extends CI_Model
 		// get last insert id
 		$id = intval($this->db->insert_id());
 
-		// if less than 1, database insertion failed
-		if($id < 1)
+		// if less than 0, database insertion failed
+		if ($id < 0)
 		{
 			// shoot an exception
 			throw new Exception('Create failed.');
+		}
+		// catch if ID in the DB is not int
+		else if ($id === 0){
+			$data = $this->get_all($data, FALSE, $fields, 1, 1, 'date_created', 'desc');
+			return $data['data'][0];
 		}
 		
 		// get the created row and throwback
@@ -150,7 +155,7 @@ class REST_Model extends CI_Model
 		$table OR $table = $this->table_name;
 
 		// check first if the data to be updated exists
-		if(!$this->exists($id))
+		if (!$this->exists($id))
 		{
 			// if not existing, throw
 			throw new Exception('Data does not exist.');
@@ -166,7 +171,7 @@ class REST_Model extends CI_Model
 		$this->db->where('id', $id)->update($table, $data);
 		
 		// check if there's an affected row
-		if($this->db->affected_rows() < 1)
+		if ($this->db->affected_rows() < 1)
 		{
 			// if none, update failed
 			throw new Exception('Update failed.');
@@ -189,7 +194,7 @@ class REST_Model extends CI_Model
 		$table OR $table = $this->table_name;
 
 		// check if data with the ID exists
-		if(!$this->exists($id))
+		if (!$this->exists($id))
 		{
 			// if none, throw an error
 			throw new Exception('Data does not exist.');
@@ -199,7 +204,7 @@ class REST_Model extends CI_Model
 		$this->db->delete($table, array('id' => $id));
 		
 		// check if there's an affected row
-		if($this->db->affected_rows() < 1)
+		if ($this->db->affected_rows() < 1)
 		{
 			// if none, delete failed
 			throw new Exception('Delete failed.');
@@ -267,7 +272,7 @@ class REST_Model extends CI_Model
 		$fields	= $this->_select_fields($fields);
 		
 		// check if row with id exists
-		if($this->exists($id))
+		if ($this->exists($id))
 		{
 			// select fields, get, return
 			return $this->db->select($fields)->get_where($table, array('id' => $id))->row_array();
@@ -311,26 +316,26 @@ class REST_Model extends CI_Model
 		$this->db->select($fields)->from($table);
 		
 		// if where is supplied
-		if($where)
+		if ($where)
 		{
 			$this->db->where($where);
 		}
 		
 		// if like is supplied
-		if($like)
+		if ($like)
 		{
 			$this->db->or_like($like);
 		}
 		
 		// if sort_field is supplied
-        if($sort_field)
+        if ($sort_field)
 		{
         	$this->db->order_by($sort_field, $sort_order);
 		}
 			
 			
 		// if limit and page are valid
-        if($limit > 0 && $page > 0)
+        if ($limit > 0 && $page > 0)
 		{
 			$this->db->limit($limit, $offset);
 		}
@@ -342,7 +347,7 @@ class REST_Model extends CI_Model
 		$return						 = array();
     	$return['data']				 = $query->result_array();
 		
-		if(ENVIRONMENT === 'development')
+		if (ENVIRONMENT === 'development')
 		{
 			$return['query'] = $this->db->last_query();
 		}
@@ -377,13 +382,13 @@ class REST_Model extends CI_Model
 		$this->db->from($table);
 		
 		// if where is supplied
-		if($where)
+		if ($where)
 		{
 			$this->db->where($where);
 		}
 		
 		// if like is supplied
-		if($like)
+		if ($like)
 		{
 			$this->db->or_like($like);
 		}
@@ -401,7 +406,7 @@ class REST_Model extends CI_Model
 		foreach($data as $key => $value)
 		{
 			// if not in the columns
-			if(!in_array($key, $this->columns))
+			if (!in_array($key, $this->columns))
 			{
 				// shoot exception
 				throw new Exception('Request contains unknown field.');
@@ -416,7 +421,7 @@ class REST_Model extends CI_Model
 	 */
 	private function _select_fields($fields)
 	{
-		if($fields)
+		if ($fields)
 		{
 			// convert to array
 			$fields = explode(',', $fields);
@@ -425,7 +430,7 @@ class REST_Model extends CI_Model
 			$wrong_fields = array_diff($fields, $this->selectable_columns);
 			
 			// if there is throw a fucking exception
-			if(!empty($wrong_fields))
+			if (!empty($wrong_fields))
 			{
 				throw new Exception('Request contains invalid field.');
 			}
@@ -462,7 +467,7 @@ class REST_Model extends CI_Model
 	 */
 	private static function _sort_order($sort_order)
 	{
-		if($sort_order && !in_array(strtolower($sort_order), array(
+		if ($sort_order && !in_array(strtolower($sort_order), array(
 			'asc',
 			'desc',
 			'ascending',

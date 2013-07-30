@@ -3,19 +3,13 @@
 
 /*
 |--------------------------------------------------------------------------
-| Template Constants
+| Query Constants
 |--------------------------------------------------------------------------
 |
-| To ease table renaming
+| 
 |
 */
 define('DEFAULT_QUERY_LIMIT', 10);
-
-define('SUSPENDED_LEVEL', 0);
-define('NOOB_LEVEL', 1);
-define('USER_LEVEL', 33);
-define('ADMIN_LEVEL', 66);
-define('ROOT_LEVEL', 100);
 
 /*
 |--------------------------------------------------------------------------
@@ -26,7 +20,9 @@ define('ROOT_LEVEL', 100);
 |
 */
 
-define('TABLE_USERS', 'user');
+define('TABLE_APPLICATIONS',	'applications');
+define('TABLE_LOGS',			'logs');
+define('TABLE_USERS',			'users');
 
 /*
 |--------------------------------------------------------------------------
