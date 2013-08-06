@@ -409,7 +409,7 @@ class REST_Model extends CI_Model
 			if (!in_array($key, $this->columns))
 			{
 				// shoot exception
-				throw new Exception('Request contains unknown field.');
+				throw new Exception('Request contains unknown field: ' . $key);
 			}
 		}
 	}

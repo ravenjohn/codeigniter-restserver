@@ -2,10 +2,10 @@
 
 class Rest extends REST_Controller
 {
-	protected $methods = array(
-		'index_get'		=> array('oauth' => FALSE)
+
+	protected $methods	= array(
+		'index_get'	=> array('oauth' => FALSE)
 	);
-	
 	
 	function __construct()
 	{
@@ -23,7 +23,10 @@ class Rest extends REST_Controller
 	
 		$data	= array();
 		
-		$data['oauth_token_name'] = config_item('rest_token_name');
+		if(config_item('rest_enable_oauth'))
+		{
+			$data['oauth_token_name'] = config_item('rest_token_name');
+		}
 		
 		$dir	= APPPATH.'/controllers/*.php';
 
@@ -32,19 +35,17 @@ class Rest extends REST_Controller
             require_once($file);
 			
 			$filename	= substr($file,strrpos($file, '/') + 1);
-			
 			$name		= substr($filename, 0, strrpos($filename, '.'));
 			$classname	= ucfirst($name);
 			
-			if ($classname === 'Rest')
+			if ($classname === 'Rest' || (!config_item('rest_enable_oauth') && $classname === 'Oauth'))
 			{
 				continue;
 			}
 			
-			$modelname = $classname . '_model';
-			
-			$ctlr = new $classname();
-			$model = new $modelname();
+			$modelname	= $classname . '_model';
+			$ctlr		= new $classname();
+			$model		= new $modelname();
 			
 			$api = array();
 		
@@ -70,39 +71,47 @@ class Rest extends REST_Controller
 			foreach($ctlr->methods as $key => $value)
 			{
 			
-				$method = $value;
-				
-				$method_name = substr($key, 0, strrpos($key, '_'));
-				
-				$verb = strtoupper(substr($key, strrpos($key, '_') + 1));
-
-				$method[$verb] = getApiURL().$name;
+				$method			= $value;
+				$method_name	= substr($key, 0, strrpos($key, '_'));
+				$verb			= strtoupper(substr($key, strrpos($key, '_') + 1));
+				$method[$verb]	= getApiURL();
 					
 				if($verb === 'GET' && $method_name === 'index')
 				{
 					$method['params'] = getDefaultGETParams();
-					$temp = $method['GET'];
-					$method['GET'] = array();
-					$method['GET'][] = $temp;
-					$method['GET'][] = $temp .'/:id';
 				}
 				
 				if($method_name !== 'index')
 				{
-					$method[$verb] .= '/'.$method_name;
+					$method[$verb] .= $name . '/'.$method_name;
 				}
-					
-				if($verb !== 'GET' && $verb !== 'POST')
+				
+				if(isset($method['url_format']))
 				{
-					$method[$verb] .= '/:id';
+					$method[$verb] = array();
+					
+					foreach($method['url_format'] as $format)
+					{
+						$method[$verb][] = getApiURL() . $format;
+					}
+					unset($method['url_format']);
+				}
+				
+				else if($method_name === 'index')
+				{
+					$method[$verb] .= $name;
+				}
+				
+				if(!config_item('rest_enable_oauth') && isset($method['oauth']))
+				{
+					unset($method['oauth']);
 				}
 					
 				$methods[] = $method;
 			}
 
-			$api['methods'] = $methods;
-			
-			$data['API'][$classname] = $api;
+			$api['methods']				= $methods;
+			$data['API'][$classname]	= $api;
 		}
 
 		$this->response($data);

@@ -137,6 +137,13 @@ class REST_Controller extends CI_Controller
 	 * @var string
 	 */
 	protected $access_token = '';
+	
+	/**
+	 * Fields
+	 *
+	 * @var array | FALSE
+	 */
+	protected $_fields = '';
 
 	/**
 	 * Constructor function
@@ -211,6 +218,9 @@ class REST_Controller extends CI_Controller
 		{
 			$this->response(array('status' => false, 'error' => 'Only AJAX requests are accepted.'), 505);
 		}
+		
+		// get fields to be selected
+		$this->_fields = isset($_GET['fields']) ? $_GET['fields'] : FALSE;
 	}
 
 	/**
@@ -226,15 +236,10 @@ class REST_Controller extends CI_Controller
 	public function _remap($object_called, $arguments)
 	{
 		
-		if (is_numeric($object_called))
+		if (is_numeric($object_called) || strlen($object_called) === 32)
 		{
 			$arguments[] = $object_called;
 			$object_called = 'index';
-		}
-	
-		if(($this->request->method === 'put' || $this->request->method === 'delete') && empty($arguments))
-		{
-			$this->response(array('status' => false, 'error' => 'Unkown method.'), 400);
 		}
 		
 		// Should we answer if not over SSL?
@@ -788,6 +793,45 @@ class REST_Controller extends CI_Controller
 	{
 		return $this->get('callback').'('.json_encode($data).')';
 	}
-
+	
+	/**
+	 * Check if fields are there
+	 *
+	 * @param	array	$required_fields	array of string
+	 * @param	array	$data				the array to check if fields exist and has value
+	 * @return	array	cleansed data
+	 *
+	 * Note : This function considers 0 / 0.0 / "0" as empty value
+	 */
+	protected function _require_fields($required_fields, $data)
+	{
+		// loop through required fields
+		foreach($required_fields as $field)
+		{
+			// check if not existing or empty
+			if ( !isset($data[$field]) || empty($data[$field]))
+			{
+				throw new Exception("Awww. :( You missed to put a value on the field : $field.");
+			}
+		}
+		
+		// loop through the data
+		foreach ($data as $key => $param)
+		{
+			//remove empty parameters
+			if(empty($param))
+			{
+				unset($data[$key]);
+			}
+			// else clean the parameter
+			else
+			{
+				$data[$key] = $this->_xss_clean($param, TRUE);
+			}
+		}
+		
+		// return cleansed data
+		return $data;
+	}
 }
 

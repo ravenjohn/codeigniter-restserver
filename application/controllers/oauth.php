@@ -16,13 +16,7 @@ class OAuth extends REST_Controller
 	
 	public function index_post()
 	{
-		$data			= array();
-		$data['name']	= $this->post('name');
-		
-		if ($data['name'] === FALSE)
-		{
-			throw new Exception('Parameter name is missing.');
-		}
+		$data = $this->_require_fields(array('name'), $this->_post_args);
 		
 		$this->oauth_model->validate_name_uniqueness($data['name']);
 		

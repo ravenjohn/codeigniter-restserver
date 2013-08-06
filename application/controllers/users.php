@@ -3,10 +3,24 @@
 class Users extends REST_Controller
 {
 	public $methods = array(
-		'index_get'		=> array('oauth' => false, 'description' => 'Get paginated users.'),
-		'index_post'	=> array('params' => '!name, ?fields', 'description' => 'Create a new user using this method. You can use ?fields to limit the returned data.'),
-		'index_put'		=> array('params' => '!name, ?fields', 'description' => 'Use this method to update the name of the user. You can use ?fields to limit the returned data.'),
-		'index_delete'	=> array('description' => 'Use this method to delete a user.')
+		'index_get'	=> array(	
+			'oauth'			=> false,
+			'url_format'	=> array('users/','users/:id'),
+			'description'	=> 'Get paginated users.'
+		),
+		'index_post' => array(
+			'params'		=> '!name, ?fields',
+			'description'	=> 'Create a new user using this method. You can use ?fields to limit the returned data.'
+		),
+		'index_put'	=> array(
+			'params'		=> '!name, ?fields',
+			'url_format'	=> array('users/:id'),
+			'description'	=> 'Use this method to update the name of the user. You can use ?fields to limit the returned data.'
+		),
+		'index_delete'	=> array(
+			'url_format'	=> array('users/:id'),
+			'description'	=> 'Use this method to delete a user.'
+		)
 	);
 	
 	
@@ -21,7 +35,7 @@ class Users extends REST_Controller
 	
 		if (is_numeric($id))
 		{
-			$data = $this->users_model->get_by_id($id, $this->get('fields'));
+			$data = $this->users_model->get_by_id($id, $this->_fields);
 		}
 		
 		else
@@ -42,7 +56,7 @@ class Users extends REST_Controller
 	
 	public function index_post()
 	{
-		$data = $this->users_model->create($this->post(), $_GET['fields'] );
+		$data = $this->users_model->create($this->post(), $this->_fields);
 		$this->response($data);
 	}
 	
@@ -52,7 +66,7 @@ class Users extends REST_Controller
 		$data = $this->users_model->update(
 				$id,
 				$this->put(),
-				$_GET['fields']
+				$this->_fields
 			);
 		$this->response($data);
 	}
