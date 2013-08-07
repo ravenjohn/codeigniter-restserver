@@ -256,7 +256,6 @@ class REST_Controller extends CI_Controller
 
 		$controller_method = $object_called.'_'.$this->request->method;
 
-
 		// Do we want to log this method (if allowed by config)?
 		$log_method = !(isset($this->methods[$controller_method]['log']) AND $this->methods[$controller_method]['log'] == FALSE);
 		
@@ -284,7 +283,6 @@ class REST_Controller extends CI_Controller
 		{
 			$this->_log_request($authorized = TRUE);
 		}
-		
 		
 		$this->current_method = $controller_method;
 
@@ -829,5 +827,6 @@ class REST_Controller extends CI_Controller
 		// return cleansed data
 		return $data;
 	}
+
 }
 

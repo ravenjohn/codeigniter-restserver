@@ -252,7 +252,7 @@ class REST_Model extends CI_Model
 	public function exists_by_fields($fields,$table = FALSE)
 	{
 		$table OR $table = $this->table_name;
-		return $this->db->from($table)->where($fields)->count_all_results() >= 1;
+		return $this->db->get_where($table, $fields)->num_rows >= 1;
 	}
 	
 	/**
