@@ -6,11 +6,11 @@ class Users extends REST_Controller
 		'index_get'	=> array(	
 			'oauth'			=> false,
 			'url_format'	=> array('users/','users/:id'),
-			'description'	=> 'Get paginated users.'
+			'description'	=> 'Get paginated users or specific user.'
 		),
 		'index_post' => array(
 			'params'		=> '!name, ?fields',
-			'description'	=> 'Create a new user using this method. You can use ?fields to limit the returned data.'
+			'description'	=> 'Create a new user using this method. You can use ?fields to filter the returned data.'
 		),
 		'index_put'	=> array(
 			'params'		=> '!name, ?fields',
@@ -32,7 +32,6 @@ class Users extends REST_Controller
 
 	public function index_get($id = NULL)
 	{
-	
 		if (is_numeric($id))
 		{
 			$data = $this->users_model->get_by_id($id, $this->_fields);

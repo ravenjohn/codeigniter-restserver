@@ -10,6 +10,7 @@ class Rest extends REST_Controller
 	function __construct()
 	{
 		parent::__construct();
+		$this->load->helper('common');
 	}
 
 	public function index_get($id = NULL)

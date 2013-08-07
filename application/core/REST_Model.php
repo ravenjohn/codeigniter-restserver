@@ -128,7 +128,7 @@ class REST_Model extends CI_Model
 		if ($id < 0)
 		{
 			// shoot an exception
-			throw new Exception('Create failed.');
+			throw new Exception('Create failed.', 424);
 		}
 		// catch if ID in the DB is not int
 		else if ($id === 0){
@@ -158,7 +158,7 @@ class REST_Model extends CI_Model
 		if (!$this->exists($id))
 		{
 			// if not existing, throw
-			throw new Exception('Data does not exist.');
+			throw new Exception('Data does not exist.', 404);
 		}
 		
 		// check for excess data
@@ -174,7 +174,7 @@ class REST_Model extends CI_Model
 		if ($this->db->affected_rows() < 1)
 		{
 			// if none, update failed
-			throw new Exception('Update failed.');
+			throw new Exception('Update failed.', 424);
 		}
 		
 		// get the updated row and throwback
@@ -197,7 +197,7 @@ class REST_Model extends CI_Model
 		if (!$this->exists($id))
 		{
 			// if none, throw an error
-			throw new Exception('Data does not exist.');
+			throw new Exception('Data does not exist.', 404);
 		}
 		
 		// delete the row in the database
@@ -207,7 +207,7 @@ class REST_Model extends CI_Model
 		if ($this->db->affected_rows() < 1)
 		{
 			// if none, delete failed
-			throw new Exception('Delete failed.');
+			throw new Exception('Delete failed.', 424);
 		}
 	}
 	
@@ -281,7 +281,7 @@ class REST_Model extends CI_Model
 		else
 		{
 			// throw error if id does not exist
-			throw new Exception('Data does not exist.');
+			throw new Exception('Data does not exist.', 404);
 		}
 	}
 	
@@ -397,7 +397,7 @@ class REST_Model extends CI_Model
 	}
 	
 	/**
-	 * Check if data key is in the table's columns
+	 * Check if data keys are in the table's columns
 	 *
 	 * @param	array	$data	the data to be validated
 	 */
@@ -409,7 +409,7 @@ class REST_Model extends CI_Model
 			if (!in_array($key, $this->columns))
 			{
 				// shoot exception
-				throw new Exception('Request contains unknown field: ' . $key);
+				throw new Exception('Request contains unknown field: ' . $key, 400);
 			}
 		}
 	}
@@ -429,7 +429,7 @@ class REST_Model extends CI_Model
 			// check if there are fields that is not on the selectable columns
 			$wrong_fields = array_diff($fields, $this->selectable_columns);
 			
-			// if there is throw a fucking exception
+			// if there is, throw an exception
 			if (!empty($wrong_fields))
 			{
 				throw new Exception('Request contains invalid field.');

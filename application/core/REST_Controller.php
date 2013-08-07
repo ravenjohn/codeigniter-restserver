@@ -216,7 +216,7 @@ class REST_Controller extends CI_Controller
 		// only allow ajax requests
 		if ( ! $this->input->is_ajax_request() AND config_item('rest_ajax_only'))
 		{
-			$this->response(array('status' => false, 'error' => 'Only AJAX requests are accepted.'), 505);
+			$this->response(array('error' => 'Only AJAX requests are accepted.'), 505);
 		}
 		
 		// get fields to be selected
@@ -245,7 +245,7 @@ class REST_Controller extends CI_Controller
 		// Should we answer if not over SSL?
 		if (config_item('force_https') AND !$this->_detect_ssl())
 		{
-			$this->response(array('status' => false, 'error' => 'Unsupported protocol'), 403);
+			$this->response(array('error' => 'Unsupported protocol'), 403);
 		}
 
 		$pattern = '/^(.*)\.('.implode('|', array_keys($this->_supported_formats)).')$/';
@@ -270,13 +270,13 @@ class REST_Controller extends CI_Controller
 				$this->_log_request();
 			}
 
-			$this->response(array('status' => false, 'error' => 'Invalid Access Token.'), 403);
+			$this->response(array('error' => 'Invalid Access Token.'), 403);
 		}
 
 		// Sure it exists, but can they do anything with it?
 		if ( ! method_exists($this, $controller_method))
 		{
-			$this->response(array('status' => false, 'error' => 'Unknown method.'), 404);
+			$this->response(array('error' => 'Unknown method.'), 404);
 		}
 		
 		// Doing token related stuff? Can only do it if they have an access token right?
@@ -308,7 +308,7 @@ class REST_Controller extends CI_Controller
 		}
 		catch(Exception $e)
 		{
-			$this->response(array('error' => $e->getMessage()), 400);
+			$this->response(array('error' => $e->getMessage()), $e->getCode() > 0 ? $e->getCode() : 400);
 		}
 	}
 
@@ -337,10 +337,6 @@ class REST_Controller extends CI_Controller
 			{
 				$data['response_time'] = floatval($this->benchmark->elapsed_time('total_execution_time_start', 'total_execution_time_end'));
 			}
-		}
-		
-		if(!isset($data['status'])){
-			$data['status'] = ($http_code === 200);
 		}
 
 		// Is compression requested?
@@ -530,7 +526,7 @@ class REST_Controller extends CI_Controller
 			{
 				$method = strtolower($this->input->post('_method'));
 			}
-			elseif ($this->input->server('HTTP_X_HTTP_METHOD_OVERRIDE'))
+			else if ($this->input->server('HTTP_X_HTTP_METHOD_OVERRIDE'))
 			{
 				$method = strtolower($this->input->server('HTTP_X_HTTP_METHOD_OVERRIDE'));
 			}
@@ -553,8 +549,6 @@ class REST_Controller extends CI_Controller
 	 */
 	protected function _detect_access_token()
 	{
-		$this->load->model('oauth_model');
-
 		// Get the api token name variable set in the rest config file
 		$access_token_variable = config_item('rest_token_name');
 
@@ -568,11 +562,13 @@ class REST_Controller extends CI_Controller
 		
 			try{
 			
+				$this->load->model('oauth_model');
+			
 				$row = $this->oauth_model->get_id_by_access_token($token);
 				
 				$this->app_id = $row['id'];
-				return TRUE;
-				
+			
+				return TRUE;				
 			}
 			
 			catch(Exception $e)
@@ -811,7 +807,7 @@ class REST_Controller extends CI_Controller
 			// check if not existing or empty
 			if ( !isset($data[$field]) || empty($data[$field]))
 			{
-				throw new Exception("Awww. :( You missed to put a value on the field : $field.");
+				throw new Exception('Awww. :( You missed to put a value on the field : ' . $field . '.', 400);
 			}
 		}
 		
