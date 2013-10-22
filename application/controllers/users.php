@@ -3,17 +3,17 @@
 class Users extends REST_Controller
 {
 	public $methods = array(
-		'index_get'	=> array(	
+		'index_get'	=> array(
 			'oauth'			=> false,
 			'url_format'	=> array('users/','users/:id'),
 			'description'	=> 'Get paginated users or specific user.'
 		),
 		'index_post' => array(
-			'params'		=> '!name, ?fields',
+			'params'		=> array('name', '?fields'),
 			'description'	=> 'Create a new user using this method. You can use ?fields to filter the returned data.'
 		),
 		'index_put'	=> array(
-			'params'		=> '!name, ?fields',
+			'params'		=> array('name', '?fields'),
 			'url_format'	=> array('users/:id'),
 			'description'	=> 'Use this method to update the name of the user. You can use ?fields to limit the returned data.'
 		),
@@ -55,7 +55,7 @@ class Users extends REST_Controller
 	
 	public function index_post()
 	{
-		$data = $this->users_model->create($this->post(), $this->_fields);
+		$data = $this->users_model->create($this->data, $this->_fields);
 		$this->response($data);
 	}
 	
@@ -64,7 +64,7 @@ class Users extends REST_Controller
 	{
 		$data = $this->users_model->update(
 				$id,
-				$this->put(),
+				$this->data,
 				$this->_fields
 			);
 		$this->response($data);

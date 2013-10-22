@@ -1,7 +1,7 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Modified CodeIgniter Rest Controller
+ * CodeIgniter Rest Controller
  *
  * A fully RESTful server implementation for CodeIgniter
  *
@@ -12,6 +12,21 @@
  * @license         http://philsturgeon.co.uk/code/dbad-license
  * @link			https://github.com/philsturgeon/codeigniter-restserver
  * @version 		2.6.2
+ */
+ 
+ 
+/**
+ * CodeIgniter Rest Controller
+ *
+ * A fully RESTful server implementation for CodeIgniter
+ *
+ * @package        	CodeIgniter
+ * @subpackage    	Libraries
+ * @category    	Libraries
+ * @authors        	Raven Lagrimas
+ * @license         MITP
+ * @link			https://github.com/ravenjohn/codeigniter-restserver
+ * @version 		1.0.0
  */
 class REST_Controller extends CI_Controller
 {
@@ -89,13 +104,6 @@ class REST_Controller extends CI_Controller
 	protected $_args = array();
 
 	/**
-	 * If the request is allowed based on the access token provided.
-	 *
-	 * @var boolean
-	 */
-	protected $_allow = TRUE;
-
-	/**
 	 * Determines if output compression is enabled
 	 *
 	 * @var boolean
@@ -108,13 +116,13 @@ class REST_Controller extends CI_Controller
 	 * @var array
 	 */
 	protected $_supported_formats = array(
-		'json' => 'application/json',
-		'xml' => 'application/xml',
-		'jsonp' => 'application/javascript',
-		'serialized' => 'application/vnd.php.serialized',
-		'php' => 'text/plain',
-		'html' => 'text/html',
-		'csv' => 'application/csv'
+		'json'			=> 'application/json',
+		'xml'			=> 'application/xml',
+		'jsonp'			=> 'application/javascript',
+		'serialized'	=> 'application/vnd.php.serialized',
+		'php'			=> 'text/plain',
+		'html'			=> 'text/html',
+		'csv'			=> 'application/csv'
 	);
 	
 	/**
@@ -125,11 +133,11 @@ class REST_Controller extends CI_Controller
 	protected $current_method = NULL;
 	
 	/**
-	 * Application's ID
+	 * User
 	 *
-	 * @var string
+	 * @var array
 	 */
-	protected $app_id = '';
+	protected $_user = NULL;
 	
 	/**
 	 * Access Token
@@ -141,9 +149,16 @@ class REST_Controller extends CI_Controller
 	/**
 	 * Fields
 	 *
-	 * @var array | FALSE
+	 * @var array
 	 */
 	protected $_fields = '';
+	
+	/**
+	 * App ID or User ID
+	 *
+	 * @var string
+	 */
+	protected $app_or_user_id = '';
 
 	/**
 	 * Constructor function
@@ -167,7 +182,7 @@ class REST_Controller extends CI_Controller
 		// How is this request being made? POST, DELETE, GET, PUT?
 		$this->request->method = $this->_detect_method();
 
-		// Create argument container, if nonexistent
+		// Create argument container, if non-existent like OPTIONS
 		if ( ! isset($this->{'_'.$this->request->method.'_args'}))
 		{
 			$this->{'_'.$this->request->method.'_args'} = array();
@@ -206,12 +221,6 @@ class REST_Controller extends CI_Controller
 
 		// Which format should the data be returned in?
 		$this->response->lang = $this->_detect_lang();
-
-		// Checking for token? GET TO WORK!
-		if (config_item('rest_enable_oauth'))
-		{
-			$this->_allow = $this->_detect_access_token();
-		}
 		
 		// only allow ajax requests
 		if ( ! $this->input->is_ajax_request() AND config_item('rest_ajax_only'))
@@ -221,6 +230,12 @@ class REST_Controller extends CI_Controller
 		
 		// get fields to be selected
 		$this->_fields = isset($_GET['fields']) ? $_GET['fields'] : FALSE;
+
+		// load model
+		if (isset($this->_model))
+		{
+			$this->load->model(strtolower($this->_model . '_model'));
+		}
 	}
 
 	/**
@@ -235,59 +250,94 @@ class REST_Controller extends CI_Controller
 	 */
 	public function _remap($object_called, $arguments)
 	{
-		
-		if (is_numeric($object_called) || strlen($object_called) === 32)
+		try
 		{
-			$arguments[] = $object_called;
-			$object_called = 'index';
-		}
 		
-		// Should we answer if not over SSL?
-		if (config_item('force_https') AND !$this->_detect_ssl())
-		{
-			$this->response(array('error' => 'Unsupported protocol'), 403);
-		}
+			if (is_numeric($object_called) || strlen($object_called) === 32)
+			{
+				$arguments[] = $object_called;
+				$object_called = 'index';
+			}
+			
+			// Should we answer if not over SSL?
+			if (config_item('force_https') AND !$this->_detect_ssl())
+			{
+				throw new Exception('Unsupported protocol', 403);
+			}
 
-		$pattern = '/^(.*)\.('.implode('|', array_keys($this->_supported_formats)).')$/';
-		if (preg_match($pattern, $object_called, $matches))
-		{
-			$object_called = $matches[1];
-		}
+			$pattern = '/^(.*)\.('.implode('|', array_keys($this->_supported_formats)).')$/';
+			if (preg_match($pattern, $object_called, $matches))
+			{
+				$object_called = $matches[1];
+			}
 
-		$controller_method = $object_called.'_'.$this->request->method;
-
-		// Do we want to log this method (if allowed by config)?
-		$log_method = !(isset($this->methods[$controller_method]['log']) AND $this->methods[$controller_method]['log'] == FALSE);
-		
-		// Use OAuth for this method?
-		$use_oauth = ! (isset($this->methods[$controller_method]['oauth']) AND $this->methods[$controller_method]['oauth'] === FALSE);
-		
-		if(config_item('rest_enable_oauth') && $use_oauth && $this->_allow === FALSE)
-		{
-			if (config_item('rest_enable_logging') AND $log_method)
+			$this->current_method = $object_called.'_'.$this->request->method;
+			
+			// Use OAuth for this method?
+			if(config_item('rest_enable_oauth') && isset($this->methods[$this->current_method]['scope']))
+			{
+				$this->_detect_access_token($this->methods[$this->current_method]['scope']);
+			}
+			else
 			{
 				$this->_log_request();
 			}
 
-			$this->response(array('error' => 'Invalid Access Token.'), 403);
-		}
+			// Sure it exists, but can they do anything with it?
+			if ( ! method_exists($this, $this->current_method))
+			{
+				throw new Exception('Unknown method.', 404);
+			}
+			
+			// Get params if specified
+			$params				= isset($this->methods[$this->current_method]['params']) ? $this->methods[$this->current_method]['params'] : array();
+			$required_fields	= array();
+			
+			// filter required fields
+			foreach($params as $param)
+			{
+				if($param[0] != '?')
+				{
+					$required_fields[] = $param;
+				}
+			}			
+			
+			// get data based on the request method
+			$this->data = call_user_func_array(array($this, $this->request->method), array());
+			
+			// verify every required fields
+			$this->data = $this->_require_fields($required_fields, $this->data);
+			
+			
+			// check if we will ignore extra data
+			if(	config_item('ignore_extra_data') === FALSE ||
+				(isset($this->methods[$this->current_method]['ignore_extra_data']) &&
+				$this->methods[$this->current_method]['ignore_extra_data'] === FALSE))
+			{
+				foreach($this->data as $param => $datum)
+				{
+					if(!in_array($param, $params))
+					{
+						throw new Exception('Sorry we don\' accept requests with extra data: [  ' . $param . ' => ' . $datum .' ]');
+					}
+				}
+			}
+			
+			
+			// get locked columns
+			$locked	= isset($this->methods[$this->current_method]['lock']) ? $this->methods[$this->current_method]['lock'] : array();
+			
+			
+			// lock it
+			self::_lock_fields($locked, $this->data);
 
-		// Sure it exists, but can they do anything with it?
-		if ( ! method_exists($this, $controller_method))
-		{
-			$this->response(array('error' => 'Unknown method.'), 404);
+			// And...... GO!
+			$this->_fire_method(array($this, $this->current_method), $arguments);
 		}
-		
-		// Doing token related stuff? Can only do it if they have an access token right?
-		if (config_item('rest_enable_oauth') AND !empty($this->app_id) && config_item('rest_enable_logging') AND $log_method)
+		catch(Exception $e)
 		{
-			$this->_log_request($authorized = TRUE);
+			$this->response(array('error' => $e->getMessage()), $e->getCode() > 0 ? $e->getCode() : 400);
 		}
-		
-		$this->current_method = $controller_method;
-
-		// And...... GO!
-		$this->_fire_method(array($this, $controller_method), $arguments);
 	}
 
 	/**
@@ -300,14 +350,7 @@ class REST_Controller extends CI_Controller
 	 */
 	protected function _fire_method($method, $args)
 	{
-		try
-		{
-			call_user_func_array($method, $args);
-		}
-		catch(Exception $e)
-		{
-			$this->response(array('error' => $e->getMessage()), $e->getCode() > 0 ? $e->getCode() : 400);
-		}
+		call_user_func_array($method, $args);
 	}
 
 	/**
@@ -395,7 +438,7 @@ class REST_Controller extends CI_Controller
 	 */
 	protected function _detect_ssl()
 	{
-    		return (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on");
+		return (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on");
 	}
 
 
@@ -552,32 +595,61 @@ class REST_Controller extends CI_Controller
 
 		// Work out the name of the SERVER entry based on config
 		$token_name = 'HTTP_'.strtoupper(str_replace('-', '_', $access_token_variable));
-
-		// Find the token from server or arguments
-		if (($token = isset($this->_args[$access_token_variable]) ? $this->_args[$access_token_variable] : $this->input->server($token_name)))
-		{
-			$this->access_token = $token;
 		
-			try{
-			
-				$this->load->model('oauth_model');
-			
-				$row = $this->oauth_model->get_id_by_access_token($token);
-				
-				$this->app_id = $row['id'];
-			
-				return TRUE;				
-			}
-			
-			catch(Exception $e)
-			{
-				return FALSE;
-			}
+		$access_token = '';
 
+		// get access token
+		if(isset($this->_args[$access_token_variable]))
+		{
+			$access_token = $this->_args[$access_token_variable];
 		}
-
-		// No token has been sent
-		return FALSE;
+		else if($this->input->server($token_name))
+		{
+			$access_token = $this->input->server($token_name);
+		}
+		else
+		{
+			$this->_log_request();
+			$this->response(array('error' => 'Missing access token.'), 403);
+		}
+		
+		
+		/*
+		 *
+		 * 	EDIT THIS PART TO FIT ON YOUR SYSTEM
+		 *	GOAL: VERIFY ACCESS_TOKEN | $this->access_token
+		 *
+		 */
+		
+		
+		// get user with that access token
+		$this->load->model('users_model');
+		$user = $this->users_model->get_user_by_access_token($this->access_token);
+		
+		// if not found
+		if(empty($user))
+		{
+			$this->response(array('error' => 'Invalid access token.'), 403);
+			$this->_log_request();
+		}
+		else
+		{
+			if(in_array($user['scope'], $scopes))
+			{
+				$this->user = $user;
+				$this->_log_request(TRUE);
+			}
+			else
+			{
+				$this->_log_request();
+				$this->response(array('error' => 'This method is not for you.'), 403);
+			}
+		}
+		
+		
+		// remove access token
+		unset($this->_args[$access_token_variable]);
+		unset($this->{'_' . $this->request->method . '_args'}[$access_token_variable]);
 	}
 	
 	/**
@@ -600,7 +672,6 @@ class REST_Controller extends CI_Controller
 			$langs = explode(',', $lang);
 
 			$return_langs = array();
-			$i = 1;
 			foreach ($langs as $lang)
 			{
 				// Remove weight and strip space
@@ -618,24 +689,26 @@ class REST_Controller extends CI_Controller
 	/**
 	 * Log request
 	 *
-	 * Record the entry for awesomeness purposes
+	 * Record the entry for awesome purposes
 	 *
 	 * @param boolean $authorized
-	 * @return object
 	 */
 	protected function _log_request($authorized = FALSE)
 	{
-		$this->load->model('logs_model');
-		
-		return $this->logs_model->create(array(
-					'app_id' => $this->app_id,
-					'uri' => $this->uri->uri_string(),
-					'method' => $this->request->method,
-					'params' => $this->_args ? json_encode($this->_args) : null,
-					'access_token' => isset($this->access_token) ? $this->access_token : '',
-					'ip_address' => $this->input->ip_address(),
-					'authorized' => $authorized
-				));
+		if(	(isset($this->methods[$this->current_method]['log']) && $this->methods[$this->current_method]['log']) ||
+			(!isset($this->methods[$this->current_method]['log']) && config_item('rest_enable_logging'))){
+			
+			$this->load->model('logs_model');
+			$this->logs_model->create(array(
+				'app_or_user_id'	=> $this->app_or_user_id,
+				'uri'				=> $this->uri->uri_string(),
+				'method'			=> $this->request->method,
+				'params'			=> json_encode($this->_args),
+				'access_token'		=> $this->access_token,
+				'ip_address'		=> $this->input->ip_address(),
+				'authorized'		=> $authorized
+			));
+		}
 	}
 
 	/**
@@ -789,7 +862,7 @@ class REST_Controller extends CI_Controller
 	}
 	
 	/**
-	 * Check if fields are there
+	 * Require fields
 	 *
 	 * @param	array	$required_fields	array of string
 	 * @param	array	$data				the array to check if fields exist and has value
@@ -805,7 +878,7 @@ class REST_Controller extends CI_Controller
 			// check if not existing or empty
 			if ( !isset($data[$field]) || empty($data[$field]))
 			{
-				throw new Exception('Awww. :( You missed to put a value on the field : ' . $field . '.', 400);
+				throw new Exception('Oooops! It seems like you missed your ' . str_replace('_',' ',$field) . '.', 400);
 			}
 		}
 		
@@ -827,6 +900,193 @@ class REST_Controller extends CI_Controller
 		// return cleansed data
 		return $data;
 	}
+	
+	/**
+	 * Lock fields
+	 *
+	 * @param	array	$lock_fields		array of string
+	 * @param	array	$data				the array to check if fields exist
+	 * @return	array	cleansed data
+	 *
+	 * Note : This function considers 0 / 0.0 / "0" as empty value
+	 */
+	protected static function _lock_fields($lock_fields, $data)
+	{
+		// loop through fields  to lock
+		foreach($lock_fields as $field)
+		{
+			// check if field is set
+			if (isset($data[$field]))
+			{
+				throw new Exception('Sorry to say but ' . str_replace('_',' ',$field) . ' is locked.', 400);
+			}
+		}
+	}
 
+	
+	/**
+	 * Check string length
+	 *
+	 * @param	string	$string		string
+	 * @param	int		$len		min length
+	 */
+	protected static function check_strlen($string, $len = 6)
+	{
+		if($string && strlen($string) < $len)
+		{
+			throw new Execption('Ooops! Your ' . str_replace('_',' ',$string) . ' is too short. It should be at least ' . $len);
+		}
+	}
+	
+	/**
+	 * Check if string is a valid email
+	 *
+	 * @param	string	$string		string
+	 */
+	protected static function _check_email($string)
+	{
+		if($string && ! preg_match("/^([a-z0-9\+_\-]+)(\.[a-z0-9\+_\-]+)*@([a-z0-9\-]+\.)+[a-z]{2,6}$/ix", $string))
+		{
+			throw new Exception('Are you sure about the email? It doesn\'t look like one.');
+		}
+	}
+	
+	/**
+	 * Check if string is boolean
+	 *
+	 * @param	string	$string		string
+	 */
+	protected static function _check_boolean($string)
+	{
+		$allowed	= array('true', 'false', '1', '0');
+		$string		= strtolower($string);
+		if($string && !in_array($string, $allowed))
+		{
+			throw new Exception( 'Oops! You sent an invalid boolean value. For reference, these are the allowed boolean values : ' . implode(', ', $allowed));
+		}
+	}
+	
+	/**
+	 * Check if string is numeric
+	 *
+	 * @param	string	$string		string
+	 * @param	string	$name		name of the string
+	 */
+	protected static function _check_numeric($string, $name)
+	{
+		if($string && !is_numeric($string))
+		{
+			throw new Exception( 'Oops! ' . $name . ' is not numeric.');
+		}
+	}
+	
+	/**
+	 * Check if string is a valid date
+	 *
+	 * @param	string	$string		string
+	 * @param	string	$name		name of the string
+	 * @param	string	$format		format of the date, optional
+	 */
+	protected static function _check_date($string, $name, $format = 'Y-m-d H:i:s')
+	{
+		if($string && DateTime::createFromFormat($format, $string) === FALSE)
+		{
+			throw new Exception('Ooops! ' . $name . ' does not look like a date. Here\'s a sample : ' . date($format, now()));
+		}
+	}
+	
+	protected static function _check_in_array($string, $array, $name)
+	{
+		if ($string && !in_array($string, $array))
+		{
+			throw new Exception('I\'m sorry but the ' . $name . ' did not match one of these: ' . implode(', ', $array), 400);
+		}		
+	}
+	
+	
+	private static function _get_upload_error_message($error_code) {
+		$error_message = NULL;
+		switch($error_code) {
+			case 0: break;
+			case 2: $error_message = 'The uploaded file exceeds the File size limit of 4MB';
+				break;
+			case 3: $error_message = 'The uploaded file was only partially uploaded';
+				break;
+			case 4: $error_message = 'No file was uploaded';
+				break;
+			case 6: $error_message = 'Missing a temporary folder';
+				break;
+			case 7: $error_message = 'Failed to write file to disk';
+				break;
+			case 8: $error_message = 'A PHP extension stopped the file upload';
+				break;
+			default:
+					$error_message = 'Unkown Error encountered while uploading the file';
+		}
+		return $error_message;
+	}
+	
+	protected static function get_file($name, $allowed_extensions = array(), $allowed_size = 2097152)
+	{
+		$file = FALSE;
+		if (isset($_FILES[$name]))
+		{
+			$file = $_FILES[$name];
+			$path = $file['name'];
+			$ext = pathinfo($path, PATHINFO_EXTENSION);
+			
+			if($file['error'] > 0)
+			{
+				throw new Exception(self::get_upload_error_message($file['error']));
+			}
+			
+			if(!in_array($ext, $allowed_extensions))
+			{
+				throw new Exception('Invalid file type. These are the allowed file types : ' . implode(', ', $allowed_extensions));
+			}
+			
+			if($file['size'] > $allowed_size)
+			{
+				throw new Exception('File too large. Max file size is 2MB');
+			}
+		}
+		return $file;
+	}
+	
+	
+	/**
+	 * Simple CURL
+	 *
+	 * @param	string	$method		HTTP METHOD
+	 * @param	string	$url		url
+	 * @param	array	$fields		payload
+	 */
+	protected static function curl($method, $url, $fields=array())
+	{
+		//format fields
+		$fields_string = array('message' => json_encode($fields));
+
+		//open connection
+		$ch = curl_init();
+
+		//set the url, number of POST vars, POST data
+		curl_setopt($ch,CURLOPT_URL, $url);
+		curl_setopt($ch,CURLOPT_RETURNTRANSFER, TRUE);
+		
+		if($method=='POST')
+		{
+			curl_setopt($ch,CURLOPT_POST, 1);
+			curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+		}
+
+		//execute post
+		$result = curl_exec($ch);
+
+		//close connection
+		curl_close($ch);
+
+		//decode to array
+		return json_decode($result,true);
+	}
 }
 

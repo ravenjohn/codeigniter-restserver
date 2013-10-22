@@ -11,7 +11,7 @@ class Logs_model extends REST_Model
 		
 		$this->columns = array(
 			'id',
-			'app_id',
+			'app_or_user_id',
 			'uri',
 			'method',
 			'params',

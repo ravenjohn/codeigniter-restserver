@@ -42,16 +42,16 @@ $config['enable_emulate_request'] = FALSE;
 | REST Enable OAuth
 |--------------------------------------------------------------------------
 |
-| When set to true REST_Controller will look for an access token and match it to the DB.
+| When set to true REST_Controller will look for an access token.
 | If no token is provided, the request will return an error.
 |
 |	FALSE
 |
+|	// recommended applications table
 |	CREATE TABLE `applications` (
 	  `id` varchar(40) NOT NULL,
 	  `name` varchar(128) NOT NULL,
 	  `app_secret` varchar(40) NOT NULL,
-	  `access_token` varchar(40) NOT NULL,
 	  `status` enum('PENDING','APPROVED','REJECTED','BLOCKED') NOT NULL DEFAULT 'PENDING',
 	  `date_created` int(11) NOT NULL,
 	  `date_updated` int(11) NOT NULL,
@@ -59,7 +59,7 @@ $config['enable_emulate_request'] = FALSE;
 	) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 |
 */
-$config['rest_enable_oauth'] = TRUE;
+$config['rest_enable_oauth'] = FALSE;
 
 
 /*
@@ -69,10 +69,10 @@ $config['rest_enable_oauth'] = TRUE;
 |
 | Which variable will provide us the access token
 |
-| Default: X-ACCESS-TOKEN
+| Default: access_token
 |
 */
-$config['rest_token_name'] = 'X-ACCESS-TOKEN';
+$config['rest_token_name'] = 'access_token';
 
 /*
 |--------------------------------------------------------------------------
@@ -87,7 +87,7 @@ $config['rest_token_name'] = 'X-ACCESS-TOKEN';
 |
 |	CREATE TABLE `logs` (
 	  `id` int(11) NOT NULL AUTO_INCREMENT,
-	  `app_id` varchar(40) NOT NULL,
+	  `app_or_user_id` varchar(40) NOT NULL,
 	  `uri` varchar(255) NOT NULL,
 	  `method` varchar(6) NOT NULL,
 	  `params` text,
@@ -129,6 +129,18 @@ $config['rest_ignore_http_accept'] = TRUE;
 |
 */
 $config['rest_ajax_only'] = FALSE;
+
+/*
+|--------------------------------------------------------------------------
+| Ignore extra data
+|--------------------------------------------------------------------------
+|
+| Set to TRUE to allow extra data from request
+|
+|	FALSE
+|
+*/
+$config['ignore_extra_data'] = FALSE;
 
 /* End of file config.php */
 /* Location: ./system/application/config/rest.php */
